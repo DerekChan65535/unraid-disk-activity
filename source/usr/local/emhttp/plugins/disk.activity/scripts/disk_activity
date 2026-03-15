@@ -1,0 +1,51 @@
+#!/bin/bash
+#
+# disk_activity - Background daemon that computes disk I/O utilization
+# from /proc/diskstats io_ticks field.
+#
+# Writes percentage (0-100) per device to /var/local/emhttp/disk_activity.ini
+# Pattern modeled after: /usr/local/emhttp/plugins/dynamix/nchan/disk_load
+#
+# Copyright 2026, Derek
+# License: GPLv2
+
+INI=/var/local/emhttp/disk_activity.ini
+TMP=/var/local/emhttp/disk_activity.tmp
+PIDFILE=/var/run/disk_activity.pid
+
+# Poll interval in seconds (matches disk_load)
+INTERVAL=2
+INTERVAL_MS=$((INTERVAL * 1000))
+
+# Store our PID
+echo $$ > "$PIDFILE"
+
+declare -A prev_ticks
+
+# Initialize: read current io_ticks for each device
+while IFS=' ' read -r dev ticks; do
+  prev_ticks[$dev]=$ticks
+done < <(awk '/(sd[a-z]+|nvme[0-9]+n1|vd[a-z]+) /{print $3, $13}' /proc/diskstats)
+
+sleep $INTERVAL
+
+while :; do
+  # Read current io_ticks
+  while IFS=' ' read -r dev ticks; do
+    prev=${prev_ticks[$dev]:-$ticks}
+    delta=$((ticks - prev))
+    # Clamp to 0-100%
+    if [ $delta -le 0 ]; then
+      pct=0
+    elif [ $delta -ge $INTERVAL_MS ]; then
+      pct=100
+    else
+      pct=$((delta * 100 / INTERVAL_MS))
+    fi
+    echo "$dev=$pct" >> "$TMP"
+    prev_ticks[$dev]=$ticks
+  done < <(awk '/(sd[a-z]+|nvme[0-9]+n1|vd[a-z]+) /{print $3, $13}' /proc/diskstats)
+
+  mv -f "$TMP" "$INI"
+  sleep $INTERVAL
+done

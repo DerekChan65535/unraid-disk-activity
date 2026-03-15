@@ -1,0 +1,75 @@
+/* Disk Activity Plugin - Progress bar styles */
+
+.disk-activity-cell {
+  white-space: nowrap;
+  min-width: 65px;
+}
+
+.disk-activity-bar {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 14px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.disk-activity-fill {
+  display: block;
+  height: 100%;
+  transition: width 0.5s ease, background-color 0.5s ease;
+  border-radius: 2px;
+}
+
+.disk-activity-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  line-height: 14px;
+  color: #fff;
+  text-shadow: 0 0 2px rgba(0,0,0,0.8);
+}
+
+/* Color classes */
+.disk-activity-low {
+  background-color: #4caf50;
+}
+
+.disk-activity-medium {
+  background-color: #ff9800;
+}
+
+.disk-activity-high {
+  background-color: #f44336;
+}
+
+.disk-activity-critical {
+  background-color: #d32f2f;
+}
+
+.disk-activity-na {
+  color: #666;
+  font-style: italic;
+}
+
+/* Plain text mode classes */
+.disk-activity-pct {
+  font-weight: bold;
+  font-size: 12px;
+}
+.disk-activity-low-text { color: #4caf50; }
+.disk-activity-medium-text { color: #ff9800; }
+.disk-activity-high-text { color: #f44336; }
+.disk-activity-critical-text { color: #d32f2f; }
+
+/* Light theme support */
+.white-theme .disk-activity-bar,
+.azure-theme .disk-activity-bar,
+.gray-theme .disk-activity-bar {
+  background: #ddd;
+}

@@ -1,0 +1,38 @@
+Menu="OtherSettings"
+Title="Disk Activity"
+Icon="area-chart"
+Tag="hdd-o"
+---
+<?PHP
+/* Copyright 2026, Derek
+ * License: GPLv2
+ *
+ * Disk Activity plugin settings page.
+ */
+?>
+<?
+$plugin = 'disk.activity';
+$cfg = parse_plugin_cfg($plugin);
+?>
+
+<form markdown="1" method="POST" action="/update.php" target="progressFrame">
+<input type="hidden" name="#file" value="<?=$plugin?>/<?=$plugin?>.cfg">
+
+_(Activity display style)_:
+: <select name="display">
+  <?=mk_option($cfg['display'], "bar", _("Text with styled bar"))?>
+  <?=mk_option($cfg['display'], "color", _("Text with color"))?>
+  <?=mk_option($cfg['display'], "plain", _("Plain text"))?>
+  </select>
+
+> Choose how disk activity is shown in the Array/Pool device tables.
+>
+> **Text with styled bar** shows a color-coded progress bar with percentage overlay.
+>
+> **Text with color** shows the percentage number colored by activity level.
+>
+> **Plain text** shows just the percentage number with no styling.
+
+<input type="submit" name="#default" value="_(Default)_">
+: <input type="submit" name="#apply" value="_(Apply)_"><input type="button" value="_(Done)_" onclick="done()">
+</form>

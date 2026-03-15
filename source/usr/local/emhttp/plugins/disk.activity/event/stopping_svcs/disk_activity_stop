@@ -1,0 +1,3 @@
+#!/bin/bash
+# Stop disk_activity daemon when array is stopping
+/usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity stop

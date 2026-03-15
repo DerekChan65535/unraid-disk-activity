@@ -1,0 +1,330 @@
+Menu="Buttons"
+---
+<?PHP
+/* Copyright 2026, Derek
+ * License: GPLv2
+ *
+ * DiskActivityColumn.page - Injects disk activity column into Array/Pool device tables.
+ * Uses Menu="Buttons" to load on every page. Only activates on Main tab pages
+ * that have disk device tables.
+ */
+?>
+<link type="text/css" rel="stylesheet" href="/plugins/disk.activity/assets/disk-activity.css">
+<script>
+$(function() {
+  // Only run on pages with disk device tables
+  var $tables = $('table.disk_status');
+  if (!$tables.length) return;
+
+  var POLL_INTERVAL = 2000;
+  var activityData = {};
+  var displayMode = 'bar'; // 'bar', 'color', or 'plain' - loaded from server config
+  var isMainPage = (window.location.pathname.indexOf('/Main') === 0);
+  if (!isMainPage) return;
+
+  // Add "Activity" header after "Errors" column (index 5, 0-based) in each table
+  $tables.each(function() {
+    $(this).find('thead tr').each(function() {
+      var $cells = $(this).children('td');
+      // Find the Errors header - it's the 6th column (index 5)
+      $cells.each(function(i) {
+        var text = $(this).text().trim();
+        if (text === 'Errors' || text === _('Errors')) {
+          // Insert Activity header after Errors
+          $('<td>Activity</td>').insertAfter($(this));
+          return false;
+        }
+        // Handle divider rows with colspan
+        var cs = parseInt($(this).attr('colspan') || '0');
+        if (cs >= 10) {
+          $(this).attr('colspan', cs + 1);
+          return false;
+        }
+      });
+    });
+  });
+
+  // Translate helper - fallback if _ is not defined
+  function _t(s) { return (typeof _ === 'function') ? _(s) : s; }
+
+  // Get color class based on activity percentage
+  function activityColor(pct) {
+    if (pct >= 90) return 'disk-activity-critical';
+    if (pct >= 70) return 'disk-activity-high';
+    if (pct >= 40) return 'disk-activity-medium';
+    return 'disk-activity-low';
+  }
+
+  // Build activity cell HTML
+  function activityCell(pct) {
+    if (pct === undefined || pct === null) {
+      return '<td class="disk-activity-cell"><span class="disk-activity-na">-</span></td>';
+    }
+    if (displayMode === 'plain') {
+      return '<td class="disk-activity-cell">' +
+        '<span class="disk-activity-pct">' + pct + '%</span></td>';
+    }
+    if (displayMode === 'color') {
+      var colorClass = activityColor(pct);
+      return '<td class="disk-activity-cell">' +
+        '<span class="disk-activity-pct ' + colorClass + '-text">' + pct + '%</span></td>';
+    }
+    var colorClass = activityColor(pct);
+    return '<td class="disk-activity-cell">' +
+      '<div class="disk-activity-bar">' +
+        '<span class="disk-activity-fill ' + colorClass + '" style="width:' + pct + '%"></span>' +
+        '<span class="disk-activity-text">' + pct + '%</span>' +
+      '</div></td>';
+  }
+
+  // Extract disk name from a table row's first cell link
+  function getDiskName(row) {
+    var name = null;
+    $(row).find('td:first a[href*="/Main/"]').each(function() {
+      var href = $(this).attr('href');
+      var match = href.match(/[?&]name=([^&]+)/);
+      if (match) {
+        name = match[1];
+        return false; // break
+      }
+    });
+    return name;
+  }
+
+  // Compute average activity for all device rows in a pool group.
+  // The summary row (tr_last) may be in a different tbody than the device rows,
+  // so we walk backward through sibling tbodies to collect the full pool group.
+  function computePoolAverage($summaryTbody) {
+    var $table = $summaryTbody.closest('table');
+    var $allTbodies = $table.find('tbody');
+    var endIndex = $allTbodies.index($summaryTbody);
+
+    // Walk backward to find start of this pool group (after the previous tr_last tbody)
+    var startIndex = 0;
+    for (var i = endIndex - 1; i >= 0; i--) {
+      if ($allTbodies.eq(i).find('tr.tr_last').length > 0) {
+        startIndex = i + 1;
+        break;
+      }
+    }
+
+    var sum = 0, count = 0;
+    for (var i = startIndex; i <= endIndex; i++) {
+      $allTbodies.eq(i).find('tr').each(function() {
+        if ($(this).hasClass('tr_last')) return;
+        var name = getDiskName(this);
+        if (name && activityData[name] !== undefined) {
+          sum += activityData[name];
+          count++;
+        }
+      });
+    }
+    return count > 0 ? Math.round(sum / count) : null;
+  }
+
+  // Inject activity cells into all rows of a tbody
+  function injectActivityCells($tbody) {
+    $tbody.find('tr').each(function() {
+      // Skip if already injected
+      if ($(this).find('.disk-activity-cell').length) return;
+
+      var $cells = $(this).children('td');
+      if (!$cells.length) return;
+
+      // Check if this is a data row or a special row
+      var firstCell = $cells.first();
+      var colspan = parseInt(firstCell.attr('colspan') || '0');
+
+      if (colspan >= 10) {
+        // Full-span row (placeholder, divider, slots) - increase colspan
+        firstCell.attr('colspan', colspan + 1);
+        return;
+      }
+
+      if ($cells.length < 6) {
+        // Not a full data row - skip
+        return;
+      }
+
+      // Standard row: insert activity cell after the 6th td (Errors, index 5)
+      var diskName = getDiskName(this);
+      var pct = diskName ? activityData[diskName] : undefined;
+
+      // For summary/totals rows (tr_last class), show average activity
+      if ($(this).hasClass('tr_last') && !diskName) {
+        var avg = computePoolAverage($tbody);
+        $($cells[5]).after(activityCell(avg));
+        return;
+      }
+
+      // Check for DISK_NP rows with fewer visible columns
+      // They have: device_info, "Not installed" text, colspan='4', then fs_info
+      var hasColspan4 = false;
+      $cells.each(function() {
+        if (parseInt($(this).attr('colspan') || '0') === 4) {
+          hasColspan4 = true;
+          return false;
+        }
+      });
+
+      if (hasColspan4) {
+        // DISK_NP row - the colspan='4' covers Temp,Reads,Writes,Errors
+        // Change colspan to 5 to include our Activity column
+        $cells.each(function() {
+          var cs = parseInt($(this).attr('colspan') || '0');
+          if (cs === 4) {
+            $(this).attr('colspan', 5);
+            return false;
+          }
+        });
+        return;
+      }
+
+      // Normal device row with all 10 cells: add activity after errors (index 5)
+      $($cells[5]).after(activityCell(pct));
+    });
+  }
+
+  // Process all device tables
+  function processAllTables() {
+    // Array devices
+    var $arrayTbody = $('#array_devices');
+    if ($arrayTbody.length) injectActivityCells($arrayTbody);
+
+    // Pool devices (pool_device0, pool_device1, ...)
+    var i = 0;
+    while (true) {
+      var $poolTbody = $('#pool_device' + i);
+      if (!$poolTbody.length) break;
+      injectActivityCells($poolTbody);
+      i++;
+    }
+
+    // Boot device
+    var $bootTbody = $('#boot_device');
+    if ($bootTbody.length) injectActivityCells($bootTbody);
+  }
+
+  // Fetch activity data from PHP API
+  function fetchActivity() {
+    $.getJSON('/plugins/disk.activity/include/DiskActivity.php', function(data) {
+      if (data && typeof data === 'object') {
+        // Read display config
+        if (data._config && data._config.display) {
+          var newMode = data._config.display;
+          if (newMode !== displayMode) {
+            displayMode = newMode;
+            // Mode changed: strip all existing cells and re-inject
+            $('table.disk_status .disk-activity-cell').remove();
+            processAllTables();
+          }
+        }
+        // Store the disk-name-keyed data (exclude meta keys)
+        var newData = {};
+        for (var key in data) {
+          if (key !== '_devices' && key !== '_config' && data.hasOwnProperty(key)) {
+            newData[key] = data[key];
+          }
+        }
+        activityData = newData;
+        // Update existing activity cells with new data
+        updateActivityValues();
+      }
+    });
+  }
+
+  // Update the percentage values in already-injected cells
+  function updateActivityValues() {
+    $('table.disk_status tbody tr').each(function() {
+      var $actCell = $(this).find('.disk-activity-cell');
+      if (!$actCell.length) return;
+
+      var diskName = getDiskName(this);
+
+      // Summary row: update with average
+      if ($(this).hasClass('tr_last') && !diskName) {
+        var $tbody = $(this).closest('tbody');
+        var avg = computePoolAverage($tbody);
+        $actCell.html(avg !== null ? activityCell(avg).replace(/^<td[^>]*>/, '').replace(/<\/td>$/, '') : '<span class="disk-activity-na">-</span>');
+        return;
+      }
+
+      if (!diskName) return;
+
+      var pct = activityData[diskName];
+      if (pct === undefined) return;
+
+      if (displayMode === 'plain') {
+        var $pctSpan = $actCell.find('.disk-activity-pct');
+        if ($pctSpan.length) {
+          $pctSpan.text(pct + '%');
+        }
+      } else if (displayMode === 'color') {
+        var $pctSpan = $actCell.find('.disk-activity-pct');
+        if ($pctSpan.length) {
+          $pctSpan.removeClass('disk-activity-low-text disk-activity-medium-text disk-activity-high-text disk-activity-critical-text');
+          $pctSpan.addClass(activityColor(pct) + '-text');
+          $pctSpan.text(pct + '%');
+        }
+      } else {
+        var $fill = $actCell.find('.disk-activity-fill');
+        var $text = $actCell.find('.disk-activity-text');
+        if ($fill.length && $text.length) {
+          $fill.css('width', pct + '%');
+          $fill.removeClass('disk-activity-low disk-activity-medium disk-activity-high disk-activity-critical');
+          $fill.addClass(activityColor(pct));
+          $text.text(pct + '%');
+        }
+      }
+    });
+  }
+
+  // Use MutationObserver to detect nchan updates replacing tbody content
+  var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      if (mutation.type === 'childList' && mutation.target.tagName === 'TBODY') {
+        injectActivityCells($(mutation.target));
+      }
+    });
+  });
+
+  // Observe all relevant tbodies
+  function startObserving() {
+    var targets = ['array_devices', 'boot_device'];
+    // Add pool device tbodies
+    var i = 0;
+    while (true) {
+      var el = document.getElementById('pool_device' + i);
+      if (!el) break;
+      targets.push('pool_device' + i);
+      i++;
+    }
+
+    targets.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        observer.observe(el, { childList: true, subtree: true });
+      }
+    });
+  }
+
+  // Initial injection
+  processAllTables();
+  startObserving();
+
+  // Start polling for activity data
+  fetchActivity();
+  var pollTimer = setInterval(fetchActivity, POLL_INTERVAL);
+
+  // Also hook into nchan message handler if available
+  // The built-in devices subscriber calls display_diskio() after update
+  // We hook into that by overriding it
+  if (typeof window.display_diskio === 'function') {
+    var origDisplayDiskio = window.display_diskio;
+    window.display_diskio = function() {
+      origDisplayDiskio.apply(this, arguments);
+      processAllTables();
+    };
+  }
+});
+</script>

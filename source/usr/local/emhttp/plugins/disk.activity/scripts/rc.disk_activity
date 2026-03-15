@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# rc.disk_activity - Start/stop the disk_activity daemon
+#
+# Usage: rc.disk_activity start|stop|restart|status
+#
+
+DAEMON=/usr/local/emhttp/plugins/disk.activity/scripts/disk_activity
+PIDFILE=/var/run/disk_activity.pid
+INI=/var/local/emhttp/disk_activity.ini
+
+start() {
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "disk_activity is already running (PID $(cat "$PIDFILE"))"
+    return
+  fi
+  echo "Starting disk_activity daemon..."
+  nohup "$DAEMON" >/dev/null 2>&1 &
+}
+
+stop() {
+  if [ -f "$PIDFILE" ]; then
+    local pid
+    pid=$(cat "$PIDFILE")
+    if kill -0 "$pid" 2>/dev/null; then
+      echo "Stopping disk_activity daemon (PID $pid)..."
+      kill "$pid" 2>/dev/null
+      rm -f "$PIDFILE"
+    fi
+  fi
+  rm -f "$INI"
+}
+
+status() {
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "disk_activity is running (PID $(cat "$PIDFILE"))"
+  else
+    echo "disk_activity is not running"
+  fi
+}
+
+case "$1" in
+  start)   start ;;
+  stop)    stop ;;
+  restart) stop; sleep 1; start ;;
+  status)  status ;;
+  *)       echo "Usage: $0 start|stop|restart|status" ;;
+esac

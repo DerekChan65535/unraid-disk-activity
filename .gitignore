@@ -1,0 +1,6 @@
+# Reference / upstream files (not part of this plugin)
+webgui/
+reference/
+
+# Diagnostic scripts (local dev only)
+diag.sh

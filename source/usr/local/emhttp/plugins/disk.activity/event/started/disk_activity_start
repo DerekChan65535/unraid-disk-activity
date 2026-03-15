@@ -1,0 +1,3 @@
+#!/bin/bash
+# Start disk_activity daemon when array is started
+/usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity start

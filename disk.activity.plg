@@ -1,0 +1,129 @@
+<?xml version='1.0' standalone='yes'?>
+
+<!DOCTYPE PLUGIN [
+  <!ENTITY name      "disk.activity">
+  <!ENTITY author    "Derek">
+  <!ENTITY version   "2026.03.09">
+  <!ENTITY launch    "Main">
+  <!ENTITY gitURL    "https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main">
+  <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
+  <!ENTITY txzURL    "https://github.com/DerekChan65535/unraid-disk-activity/releases/download/&version;/disk.activity-&version;.txz">
+  <!ENTITY md5URL    "&gitURL;/disk.activity-&version;.md5">
+  <!ENTITY support   "https://forums.unraid.net/topic/FORUM_TOPIC_ID-disk-activity/">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" min="6.12.0" max="7.9.9">
+
+<CHANGES>
+###&version;
+- Initial release
+- Show disk I/O activity percentage (0-100%) next to Errors column on Main page
+- Supports Array Devices, Pool Devices, and Boot Device
+- Summary rows display average activity across all pool members
+- Three display modes: progress bar, colored text, or plain text
+- Configurable via Settings &gt; Disk Activity
+- Real-time polling every 2 seconds
+- Color-coded thresholds: green (&lt;40%), orange (40-69%), red (70-89%), dark red (90%+)
+- Light theme support
+- Automatic start/stop with array via Unraid event hooks
+</CHANGES>
+
+<!--
+Disk Activity Plugin for Unraid
+Shows real-time disk I/O utilization percentage (0-100%) as a new Activity column
+next to the Errors column on Array Devices, Pool Devices, and Boot Device tables.
+Reads io_ticks from /proc/diskstats via a lightweight background daemon.
+-->
+
+<!-- PRE-INSTALL: stop daemon if upgrading -->
+<FILE Run="/bin/bash" Method="install">
+<INLINE>
+<![CDATA[
+# Stop existing daemon if running (upgrade scenario)
+if [ -f /usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity ]; then
+  /usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity stop 2>/dev/null
+fi
+]]>
+</INLINE>
+</FILE>
+
+<!-- DOWNLOAD MD5 checksum file -->
+<FILE Name="/tmp/&name;-&version;.md5">
+<URL>&md5URL;</URL>
+</FILE>
+
+<!-- INSTALL: download and install the TXZ package -->
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
+<URL>&txzURL;</URL>
+<MD5>/tmp/&name;-&version;.md5</MD5>
+</FILE>
+
+<!-- POST-INSTALL: set permissions and start daemon if array is started -->
+<FILE Run="/bin/bash" Method="install">
+<INLINE>
+<![CDATA[
+# Set executable permissions
+chmod +x /usr/local/emhttp/plugins/disk.activity/scripts/disk_activity
+chmod +x /usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity
+chmod +x /usr/local/emhttp/plugins/disk.activity/event/started/disk_activity_start
+chmod +x /usr/local/emhttp/plugins/disk.activity/event/stopping_svcs/disk_activity_stop
+
+# Start daemon if array is already started
+if [ -e /proc/mdcmd ] && grep -q 'mdState=STARTED' /var/local/emhttp/var.ini 2>/dev/null; then
+  /usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity start
+fi
+
+# Clean up old versions from boot flash
+cd /boot/config/plugins/disk.activity
+shopt -s nullglob
+for f in disk.activity-*.txz; do
+  [[ "$f" == "disk.activity-&version;.txz" ]] && continue
+  rm -f "$f"
+done
+
+# Clean up temp MD5 file
+rm -f /tmp/disk.activity-*.md5
+
+echo ""
+echo "----------------------------------------------------"
+echo " Disk Activity Plugin v&version; installed."
+echo " Refresh the Main page to see the Activity column."
+echo "----------------------------------------------------"
+echo ""
+]]>
+</INLINE>
+</FILE>
+
+<!-- REMOVAL SCRIPT -->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+<![CDATA[
+# Stop daemon
+if [ -f /usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity ]; then
+  /usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity stop
+fi
+
+# Remove plugin package
+removepkg disk.activity 2>/dev/null
+
+# Clean up runtime files
+rm -f /var/local/emhttp/disk_activity.ini
+rm -f /var/local/emhttp/disk_activity.tmp
+rm -f /var/run/disk_activity.pid
+
+# Clean up plugin directory (only emhttp, not boot config)
+rm -rf /usr/local/emhttp/plugins/disk.activity
+
+# Clean up boot flash config
+rm -rf /boot/config/plugins/disk.activity
+
+echo ""
+echo "----------------------------------------------------"
+echo " Disk Activity Plugin removed."
+echo "----------------------------------------------------"
+echo ""
+]]>
+</INLINE>
+</FILE>
+
+</PLUGIN>

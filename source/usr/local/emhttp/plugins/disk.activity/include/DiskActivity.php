@@ -57,6 +57,9 @@ $defaultFile = dirname(__DIR__) . '/default.cfg';
 $cfg = [];
 if (file_exists($defaultFile)) $cfg = @parse_ini_file($defaultFile) ?: [];
 if (file_exists($cfgFile)) $cfg = array_merge($cfg, @parse_ini_file($cfgFile) ?: []);
-$result['_config'] = ['display' => $cfg['display'] ?? 'bar'];
+$result['_config'] = [
+  'display' => $cfg['display'] ?? 'bar',
+  'window'  => $cfg['window']  ?? '2s',
+];
 
 echo json_encode($result);

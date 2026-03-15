@@ -33,6 +33,22 @@ _(Activity display style)_:
 >
 > **Plain text** shows just the percentage number with no styling.
 
+_(Averaging window)_:
+: <select name="window">
+  <?=mk_option($cfg['window'], "2s", _("Instant (2s)"))?>
+  <?=mk_option($cfg['window'], "10s", _("10 seconds"))?>
+  <?=mk_option($cfg['window'], "1min", _("1 minute"))?>
+  <?=mk_option($cfg['window'], "5min", _("5 minutes"))?>
+  </select>
+
+> How far back to average disk activity.
+>
+> **Instant** shows the raw 2-second sample (most responsive).
+>
+> **10 seconds / 1 minute / 5 minutes** smooth out spikes by averaging over that period.
+>
+> The column header updates to reflect the chosen window (e.g. "1MIN Activity").
+
 <input type="submit" name="#default" value="_(Default)_">
 : <input type="submit" name="#apply" value="_(Apply)_"><input type="button" value="_(Done)_" onclick="done()">
 </form>

@@ -19,8 +19,19 @@ $(function() {
   var POLL_INTERVAL = 2000;
   var activityData = {};
   var displayMode = 'bar'; // 'bar', 'color', or 'plain' - loaded from server config
+  var windowMode = '2s';  // '2s', '10s', '1min', '5min' - loaded from server config
   var isMainPage = (window.location.pathname.indexOf('/Main') === 0);
   if (!isMainPage) return;
+
+  // Map window setting to header label
+  function headerLabel() {
+    switch (windowMode) {
+      case '10s':  return '10S Activity';
+      case '1min': return '1MIN Activity';
+      case '5min': return '5MIN Activity';
+      default:     return 'Activity';
+    }
+  }
 
   // Add "Activity" header after "Errors" column (index 5, 0-based) in each table
   $tables.each(function() {
@@ -31,7 +42,7 @@ $(function() {
         var text = $(this).text().trim();
         if (text === 'Errors' || text === _('Errors')) {
           // Insert Activity header after Errors
-          $('<td>Activity</td>').insertAfter($(this));
+          $('<td class="disk-activity-header">' + headerLabel() + '</td>').insertAfter($(this));
           return false;
         }
         // Handle divider rows with colspan
@@ -210,11 +221,20 @@ $(function() {
     $.getJSON('/plugins/disk.activity/include/DiskActivity.php', function(data) {
       if (data && typeof data === 'object') {
         // Read display config
-        if (data._config && data._config.display) {
-          var newMode = data._config.display;
+        if (data._config) {
+          var newMode = data._config.display || 'bar';
+          var newWindow = data._config.window || '2s';
+          var needReinject = false;
           if (newMode !== displayMode) {
             displayMode = newMode;
-            // Mode changed: strip all existing cells and re-inject
+            needReinject = true;
+          }
+          if (newWindow !== windowMode) {
+            windowMode = newWindow;
+            // Update all header cells
+            $('table.disk_status .disk-activity-header').text(headerLabel());
+          }
+          if (needReinject) {
             $('table.disk_status .disk-activity-cell').remove();
             processAllTables();
           }

@@ -4,6 +4,7 @@
 # from /proc/diskstats io_ticks field.
 #
 # Writes percentage (0-100) per device to /var/local/emhttp/disk_activity.ini
+# Supports configurable averaging windows: 2s, 10s, 1min, 5min
 # Pattern modeled after: /usr/local/emhttp/plugins/dynamix/nchan/disk_load
 #
 # Copyright 2026, Derek
@@ -12,29 +13,84 @@
 INI=/var/local/emhttp/disk_activity.ini
 TMP=/var/local/emhttp/disk_activity.tmp
 PIDFILE=/var/run/disk_activity.pid
+CFG=/boot/config/plugins/disk.activity/disk.activity.cfg
+DEFAULT_CFG=/usr/local/emhttp/plugins/disk.activity/default.cfg
 
-# Poll interval in seconds (matches disk_load)
+# Poll interval in seconds
 INTERVAL=2
 INTERVAL_MS=$((INTERVAL * 1000))
+
+# Max samples to keep (5min / 2s = 150)
+MAX_SAMPLES=150
 
 # Store our PID
 echo $$ > "$PIDFILE"
 
 declare -A prev_ticks
+# Circular buffer: samples_<dev> is a space-separated list of recent pct values
+declare -A samples
+# How many samples stored per device
+declare -A sample_count
+
+# Read window setting from config, return sample count needed
+get_window_samples() {
+  local window="2s"
+  # Read from boot config, fall back to default
+  if [ -f "$CFG" ]; then
+    local val
+    val=$(grep -m1 '^window=' "$CFG" 2>/dev/null | cut -d'"' -f2)
+    [ -n "$val" ] && window="$val"
+  elif [ -f "$DEFAULT_CFG" ]; then
+    local val
+    val=$(grep -m1 '^window=' "$DEFAULT_CFG" 2>/dev/null | cut -d'"' -f2)
+    [ -n "$val" ] && window="$val"
+  fi
+  case "$window" in
+    10s)  echo 5 ;;    # 10s / 2s
+    1min) echo 30 ;;   # 60s / 2s
+    5min) echo 150 ;;  # 300s / 2s
+    *)    echo 1 ;;    # instant (2s)
+  esac
+}
+
+# Compute average of last N values from a sample list
+# Args: $1=space-separated samples, $2=count of samples, $3=window size
+compute_avg() {
+  local all="$1"
+  local count=$2
+  local want=$3
+  # Take the last 'want' samples (or all if fewer available)
+  local use=$want
+  [ $count -lt $use ] && use=$count
+  # Get last $use values
+  local vals
+  vals=$(echo "$all" | tr ' ' '\n' | tail -n "$use")
+  local sum=0 n=0
+  for v in $vals; do
+    sum=$((sum + v))
+    n=$((n + 1))
+  done
+  [ $n -le 0 ] && echo 0 && return
+  echo $((sum / n))
+}
 
 # Initialize: read current io_ticks for each device
 while IFS=' ' read -r dev ticks; do
   prev_ticks[$dev]=$ticks
+  samples[$dev]=""
+  sample_count[$dev]=0
 done < <(awk '/(sd[a-z]+|nvme[0-9]+n1|vd[a-z]+) /{print $3, $13}' /proc/diskstats)
 
 sleep $INTERVAL
 
 while :; do
-  # Read current io_ticks
+  # Read window setting each cycle (allows live config changes)
+  win_samples=$(get_window_samples)
+
+  # Read current io_ticks and compute instant pct
   while IFS=' ' read -r dev ticks; do
     prev=${prev_ticks[$dev]:-$ticks}
     delta=$((ticks - prev))
-    # Clamp to 0-100%
     if [ $delta -le 0 ]; then
       pct=0
     elif [ $delta -ge $INTERVAL_MS ]; then
@@ -42,7 +98,25 @@ while :; do
     else
       pct=$((delta * 100 / INTERVAL_MS))
     fi
-    echo "$dev=$pct" >> "$TMP"
+
+    # Append to circular buffer
+    local_count=${sample_count[$dev]:-0}
+    if [ $local_count -ge $MAX_SAMPLES ]; then
+      # Drop oldest sample (first value)
+      samples[$dev]="${samples[$dev]#* }"
+    else
+      sample_count[$dev]=$((local_count + 1))
+    fi
+    if [ -z "${samples[$dev]}" ]; then
+      samples[$dev]="$pct"
+    else
+      samples[$dev]="${samples[$dev]} $pct"
+    fi
+
+    # Compute averaged value
+    avg=$(compute_avg "${samples[$dev]}" "${sample_count[$dev]}" "$win_samples")
+    echo "$dev=$avg" >> "$TMP"
+
     prev_ticks[$dev]=$ticks
   done < <(awk '/(sd[a-z]+|nvme[0-9]+n1|vd[a-z]+) /{print $3, $13}' /proc/diskstats)
 

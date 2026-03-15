@@ -9,7 +9,7 @@
   <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
   <!ENTITY txzURL    "https://github.com/DerekChan65535/unraid-disk-activity/releases/download/&version;/disk.activity-&version;.txz">
   <!ENTITY md5URL    "&gitURL;/disk.activity-&version;.md5">
-  <!ENTITY support   "https://forums.unraid.net/topic/FORUM_TOPIC_ID-disk-activity/">
+  <!ENTITY support   "https://forums.unraid.net/topic/197765-plugin-disk-activity-real-time-io-utilization-column-for-array-pool-devices/">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" min="6.12.0" max="7.9.9">

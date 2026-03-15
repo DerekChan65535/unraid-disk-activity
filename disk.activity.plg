@@ -70,7 +70,7 @@ chmod +x /usr/local/emhttp/plugins/disk.activity/event/started/disk_activity_sta
 chmod +x /usr/local/emhttp/plugins/disk.activity/event/stopping_svcs/disk_activity_stop
 
 # Start daemon if array is already started
-if [ -e /proc/mdcmd ] && grep -q 'mdState=STARTED' /var/local/emhttp/var.ini 2>/dev/null; then
+if [ -e /proc/mdcmd ] && grep -q 'mdState=.*STARTED' /var/local/emhttp/var.ini 2>/dev/null; then
   /usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity start
 fi
 

@@ -1,0 +1,5 @@
+# Force LF line endings for all files (Linux target)
+* text=auto eol=lf
+
+# Binary files
+*.txz binary

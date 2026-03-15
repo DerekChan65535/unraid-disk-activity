@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "disk.activity">
   <!ENTITY author    "Derek">
-  <!ENTITY version   "2026.03.15">
+  <!ENTITY version   "2026.03.15.1">
   <!ENTITY launch    "Main">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main">
   <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
@@ -16,6 +16,7 @@
 
 <CHANGES>
 ###&version;
+- Fix daemon not starting automatically when plugin is installed while array is running
 - Add configurable averaging window: Instant (2s), 10 seconds, 1 minute, 5 minutes
 - Daemon uses circular buffer with rolling average over selected window
 - Column header dynamically reflects selected window (e.g. "10S Activity", "1MIN Activity")

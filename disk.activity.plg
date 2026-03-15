@@ -3,12 +3,12 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "disk.activity">
   <!ENTITY author    "Derek">
-  <!ENTITY version   "2026.03.09">
+  <!ENTITY version   "2026.03.15">
   <!ENTITY launch    "Main">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main">
   <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
   <!ENTITY txzURL    "https://github.com/DerekChan65535/unraid-disk-activity/releases/download/&version;/disk.activity-&version;.txz">
-  <!ENTITY md5       "bd776397268b738d3d41f19165831383">
+  <!ENTITY md5       "7db84735ab6ed1588fec41ec2b0653ab">
   <!ENTITY support   "https://forums.unraid.net/topic/197765-plugin-disk-activity-real-time-io-utilization-column-for-array-pool-devices/">
 ]>
 
@@ -16,6 +16,12 @@
 
 <CHANGES>
 ###&version;
+- Add configurable averaging window: Instant (2s), 10 seconds, 1 minute, 5 minutes
+- Daemon uses circular buffer with rolling average over selected window
+- Column header dynamically reflects selected window (e.g. "10S Activity", "1MIN Activity")
+- New Averaging Window dropdown on Settings page
+
+###2026.03.09
 - Initial release
 - Show disk I/O activity percentage (0-100%) next to Errors column on Main page
 - Supports Array Devices, Pool Devices, and Boot Device

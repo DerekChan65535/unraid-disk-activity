@@ -8,7 +8,7 @@
   <!ENTITY gitURL    "https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main">
   <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
   <!ENTITY txzURL    "https://github.com/DerekChan65535/unraid-disk-activity/releases/download/&version;/disk.activity-&version;.txz">
-  <!ENTITY md5URL    "&gitURL;/disk.activity-&version;.md5">
+  <!ENTITY md5       "bd776397268b738d3d41f19165831383">
   <!ENTITY support   "https://forums.unraid.net/topic/197765-plugin-disk-activity-real-time-io-utilization-column-for-array-pool-devices/">
 ]>
 
@@ -47,15 +47,10 @@ fi
 </INLINE>
 </FILE>
 
-<!-- DOWNLOAD MD5 checksum file -->
-<FILE Name="/tmp/&name;-&version;.md5">
-<URL>&md5URL;</URL>
-</FILE>
-
 <!-- INSTALL: download and install the TXZ package -->
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
 <URL>&txzURL;</URL>
-<MD5>/tmp/&name;-&version;.md5</MD5>
+<MD5>&md5;</MD5>
 </FILE>
 
 <!-- POST-INSTALL: set permissions and start daemon if array is started -->
@@ -80,9 +75,6 @@ for f in disk.activity-*.txz; do
   [[ "$f" == "disk.activity-&version;.txz" ]] && continue
   rm -f "$f"
 done
-
-# Clean up temp MD5 file
-rm -f /tmp/disk.activity-*.md5
 
 echo ""
 echo "----------------------------------------------------"

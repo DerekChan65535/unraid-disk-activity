@@ -11,11 +11,11 @@ INI=/var/local/emhttp/disk_activity.ini
 
 start() {
   if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
-    echo "disk_activity is already running (PID $(cat "$PIDFILE"))"
+    echo "disk_activity daemon already running (PID $(cat "$PIDFILE"))"
     return
   fi
-  echo "Starting disk_activity daemon..."
   nohup "$DAEMON" >/dev/null 2>&1 &
+  echo "disk_activity daemon started"
 }
 
 stop() {

@@ -3,18 +3,23 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "disk.activity">
   <!ENTITY author    "Derek">
-  <!ENTITY version   "2026.05.01">
+  <!ENTITY version   "2026.05.19">
   <!ENTITY launch    "Main">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main">
   <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
   <!ENTITY txzURL    "https://github.com/DerekChan65535/unraid-disk-activity/releases/download/&version;/disk.activity-&version;.txz">
-  <!ENTITY md5       "ca3dec0b5084cf0ed982114c8de05222">
+  <!ENTITY md5       "712ae3f390dfbff85c3a8069fa57d417">
   <!ENTITY support   "https://forums.unraid.net/topic/197765-plugin-disk-activity-real-time-io-utilization-column-for-array-pool-devices/">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" min="6.12.0" max="7.9.9">
 
 <CHANGES>
+###2026.05.19
+- Fix activity bars misplaced after Unraid 7.3.0 update
+- Unraid 7.3.0 added a new FS column causing colspan cells to shift the injection point
+- Replaced naive td-count insertion with visual-column tracking that correctly handles colspan cells
+
 ###2026.05.01
 - Fix "Starting disk_activity daemon..." message persisting in Unraid footer after array start
 - Stop event now suppresses output to keep footer clean

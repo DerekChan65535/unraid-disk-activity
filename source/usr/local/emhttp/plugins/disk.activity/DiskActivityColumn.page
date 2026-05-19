@@ -157,42 +157,46 @@ $(function() {
         return;
       }
 
-      // Standard row: insert activity cell after the 6th td (Errors, index 5)
+      // Determine activity value for this row
       var diskName = getDiskName(this);
       var pct = diskName ? activityData[diskName] : undefined;
 
-      // For summary/totals rows (tr_last class), show average activity
+      // For summary/totals rows (tr_last), use pool average
       if ($(this).hasClass('tr_last') && !diskName) {
-        var avg = computePoolAverage($tbody);
-        $($cells[5]).after(activityCell(avg));
-        return;
+        pct = computePoolAverage($tbody);
       }
 
-      // Check for DISK_NP rows with fewer visible columns
-      // They have: device_info, "Not installed" text, colspan='4', then fs_info
-      var hasColspan4 = false;
+      // Walk cells by visual column position to find the correct insertion point.
+      // Our Activity column belongs at visual column index 6 (after Errors at col 5).
+      // This handles colspan cells correctly regardless of Unraid table layout changes:
+      //   - Normal status rows: each cell is colspan=1, insert after the cell ending at col 6
+      //   - Name rows / DISK_NP rows: a colspan cell spans over col 6, extend it by 1
+      var ACTIVITY_COL = 6;
+      var visualCol = 0;
+      var handled = false;
+
       $cells.each(function() {
-        if (parseInt($(this).attr('colspan') || '0') === 4) {
-          hasColspan4 = true;
+        if (handled) return false;
+        var $c = $(this);
+        var span = parseInt($c.attr('colspan') || '1');
+
+        if (visualCol + span === ACTIVITY_COL) {
+          // This cell ends exactly before Activity — insert Activity after it
+          $c.after(activityCell(pct));
+          handled = true;
           return false;
         }
+
+        if (visualCol < ACTIVITY_COL && visualCol + span > ACTIVITY_COL) {
+          // This cell spans over the Activity column (name rows, DISK_NP rows, etc).
+          // Extend colspan by 1 to include Activity in the span — no bar shown in these rows.
+          $c.attr('colspan', span + 1);
+          handled = true;
+          return false;
+        }
+
+        visualCol += span;
       });
-
-      if (hasColspan4) {
-        // DISK_NP row - the colspan='4' covers Temp,Reads,Writes,Errors
-        // Change colspan to 5 to include our Activity column
-        $cells.each(function() {
-          var cs = parseInt($(this).attr('colspan') || '0');
-          if (cs === 4) {
-            $(this).attr('colspan', 5);
-            return false;
-          }
-        });
-        return;
-      }
-
-      // Normal device row with all 10 cells: add activity after errors (index 5)
-      $($cells[5]).after(activityCell(pct));
     });
   }
 

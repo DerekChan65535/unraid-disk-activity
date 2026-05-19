@@ -3,18 +3,23 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "disk.activity">
   <!ENTITY author    "Derek">
-  <!ENTITY version   "2026.05.19">
+  <!ENTITY version   "2026.05.19.1">
   <!ENTITY launch    "Main">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main">
   <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
   <!ENTITY txzURL    "https://github.com/DerekChan65535/unraid-disk-activity/releases/download/&version;/disk.activity-&version;.txz">
-  <!ENTITY md5       "712ae3f390dfbff85c3a8069fa57d417">
+  <!ENTITY md5       "f8353079e0fc01fa84199fb5b4f2ca84">
   <!ENTITY support   "https://forums.unraid.net/topic/197765-plugin-disk-activity-real-time-io-utilization-column-for-array-pool-devices/">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" min="6.12.0" max="7.9.9">
 
 <CHANGES>
+###2026.05.19.1
+- Fix activity bar incorrectly shown on ZFS pool header row ("Data Partition ONLINE")
+- Fix Cache/Logs Device rows showing "-" instead of activity bar (URL-encoded device name mismatch)
+- Fix activity cells not updating from "-" to bar after first data fetch
+
 ###2026.05.19
 - Fix activity bars misplaced after Unraid 7.3.0 update
 - Unraid 7.3.0 added a new FS column causing colspan cells to shift the injection point

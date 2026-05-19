@@ -9,7 +9,8 @@ Menu="Buttons"
  * that have disk device tables.
  */
 ?>
-<link type="text/css" rel="stylesheet" href="/plugins/disk.activity/assets/disk-activity.css">
+<?PHP $v = filemtime('/usr/local/emhttp/plugins/disk.activity/assets/disk-activity.css'); ?>
+<link type="text/css" rel="stylesheet" href="/plugins/disk.activity/assets/disk-activity.css?v=<?=$v?>">
 <script>
 $(function() {
   // Only run on pages with disk device tables
@@ -95,7 +96,7 @@ $(function() {
       var href = $(this).attr('href');
       var match = href.match(/[?&]name=([^&]+)/);
       if (match) {
-        name = match[1];
+        name = decodeURIComponent(match[1]);
         return false; // break
       }
     });
@@ -149,6 +150,23 @@ $(function() {
       if (colspan >= 10) {
         // Full-span row (placeholder, divider, slots) - increase colspan
         firstCell.attr('colspan', colspan + 1);
+        return;
+      }
+
+      if ($(this).hasClass('pool_header')) {
+        // Pool summary row (ZFS "Data Partition ONLINE" header) — extend the middle
+        // colspan that spans Temp/Reads/Writes/Errors to also cover the Activity column.
+        // Guard against re-entry: the MutationObserver fires on our own injections too
+        // (subtree:true), so without this flag the colspan would grow on every re-call.
+        if ($(this).data('disk-activity-handled')) return;
+        $cells.each(function() {
+          var span = parseInt($(this).attr('colspan') || '1');
+          if (span >= 4) {
+            $(this).attr('colspan', span + 1);
+            return false;
+          }
+        });
+        $(this).data('disk-activity-handled', true);
         return;
       }
 
@@ -277,6 +295,12 @@ $(function() {
 
       var pct = activityData[diskName];
       if (pct === undefined) return;
+
+      // If the cell is in na state (no data at injection time), rebuild it now
+      if ($actCell.find('.disk-activity-na').length) {
+        $actCell.html(activityCell(pct).replace(/^<td[^>]*>/, '').replace(/<\/td>$/, ''));
+        return;
+      }
 
       if (displayMode === 'plain') {
         var $pctSpan = $actCell.find('.disk-activity-pct');

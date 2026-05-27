@@ -4,6 +4,6 @@
   <Profile>
 Author of the **Disk Activity** plugin for Unraid — adds a real-time I/O utilization column to the Main page array and pool device tables.
   </Profile>
-  <DonateLink></DonateLink>
-  <DonateText></DonateText>
+  <DonateLink>https://ko-fi.com/derekchen65535</DonateLink>
+  <DonateText>Buy me a coffee</DonateText>
 </Maintainer>

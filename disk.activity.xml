@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Containers>
+  <Plugin>True</Plugin>
+  <PluginURL>https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main/disk.activity.plg</PluginURL>
+  <PluginAuthor>DerekChan65535</PluginAuthor>
+  <Beta>False</Beta>
+  <Category>Tools:System</Category>
+  <Date>2026-05-20</Date>
+  <Name>Disk Activity</Name>
+  <Description>
+Adds a real-time I/O utilization column to the Main page array and pool device tables.
+Each disk row shows a live activity bar (0-100%) updated every 2 seconds.
+Supports Array Devices, Pool Devices (including ZFS pools), and Boot Device.
+Summary rows display the average activity across all pool members.
+Three display modes: progress bar, colored percentage, or plain text.
+Configurable averaging window: Instant (2s), 10 seconds, 1 minute, or 5 minutes.
+  </Description>
+  <MinVer>7.3.0</MinVer>
+  <Project>https://github.com/DerekChan65535/unraid-disk-activity</Project>
+  <Support>https://forums.unraid.net/topic/197765-plugin-disk-activity-real-time-io-utilization-column-for-array-pool-devices/</Support>
+  <Icon>https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main/icon.png</Icon>
+  <License>MIT License - Copyright 2026 DerekChan65535</License>
+</Containers>

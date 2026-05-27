@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Maintainer>
+  <Icon>https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main/icon.png</Icon>
+  <Profile>
+Author of the **Disk Activity** plugin for Unraid — adds a real-time I/O utilization column to the Main page array and pool device tables.
+  </Profile>
+  <DonateLink></DonateLink>
+  <DonateText></DonateText>
+</Maintainer>

@@ -3,18 +3,23 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "disk.activity">
   <!ENTITY author    "Derek">
-  <!ENTITY version   "2026.05.20">
+  <!ENTITY version   "2026.06.07">
   <!ENTITY launch    "Main">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main">
   <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
   <!ENTITY txzURL    "https://github.com/DerekChan65535/unraid-disk-activity/releases/download/&version;/disk.activity-&version;.txz">
-  <!ENTITY md5       "fe069a135b68846684bc2d3b265ed6e3">
+  <!ENTITY md5       "93c5a1860fec9658923edf9dc0b8dd50">
   <!ENTITY support   "https://forums.unraid.net/topic/197765-plugin-disk-activity-real-time-io-utilization-column-for-array-pool-devices/">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" min="7.3.0" max="7.9.9">
 
 <CHANGES>
+###2026.06.07
+- Fix "already installed" error preventing reinstall after uninstall
+- Removal now removes the correctly versioned Slackware package (disk.activity-&lt;version&gt;) instead of the bare name, so the package database no longer keeps a stale entry
+- Install now uses upgradepkg --reinstall so the package is always extracted even if a stale package-DB entry exists (recovers systems already stuck in the broken state)
+
 ###2026.05.20
 - Add plugin icon
 
@@ -73,7 +78,9 @@ fi
 </FILE>
 
 <!-- INSTALL: download and install the TXZ package -->
-<FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new">
+<!-- The reinstall flag ensures the package is extracted even if a stale
+     package-DB entry from a previous (incomplete) removal still exists -->
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;.txz" Run="upgradepkg --install-new --reinstall">
 <URL>&txzURL;</URL>
 <MD5>&md5;</MD5>
 </FILE>
@@ -120,8 +127,16 @@ if [ -f /usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity ]; then
   /usr/local/emhttp/plugins/disk.activity/scripts/rc.disk_activity stop
 fi
 
-# Remove plugin package
-removepkg disk.activity 2>/dev/null
+# Remove plugin package(s).
+# The installed package is named "disk.activity-<version>" (e.g.
+# disk.activity-2026.05.20), so a bare "removepkg disk.activity" fails with
+# "No such package" and leaves a stale entry in /var/log/packages/. That stale
+# entry later makes upgradepkg skip extraction ("already installed") on reinstall.
+# Remove every matching versioned package to keep the package DB clean.
+for pkg in /var/log/packages/disk.activity-*; do
+  [ -e "$pkg" ] || continue
+  removepkg "$(basename "$pkg")" 2>/dev/null
+done
 
 # Clean up runtime files
 rm -f /var/local/emhttp/disk_activity.ini

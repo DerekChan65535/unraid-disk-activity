@@ -6,3 +6,6 @@ reference/
 diag.sh
 
 build/
+
+# Local agent skills / workspace config
+.github/

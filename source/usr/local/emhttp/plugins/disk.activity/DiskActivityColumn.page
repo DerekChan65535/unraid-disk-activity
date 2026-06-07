@@ -34,24 +34,44 @@ $(function() {
     }
   }
 
-  // Add "Activity" header after "Errors" column (index 5, 0-based) in each table
+  // Activity column lives at visual column index 6 (right after Errors at col 5).
+  var ACTIVITY_COL = 6;
+
+  // Insert the "Activity" header by VISUAL COLUMN POSITION, mirroring the body
+  // cell injection below. Do NOT match the "Errors" header text: in non-English
+  // locales Unraid renders the header translated (e.g. "Fehler"), so a text match
+  // fails and the header cell would be skipped while the body cells are still
+  // inserted by position — shifting every column and hiding the trailing "Free"
+  // column. Walking visual columns keeps header and body aligned in every language.
   $tables.each(function() {
     $(this).find('thead tr').each(function() {
       var $cells = $(this).children('td');
-      // Find the Errors header - it's the 6th column (index 5)
-      $cells.each(function(i) {
-        var text = $(this).text().trim();
-        if (text === 'Errors' || text === _('Errors')) {
-          // Insert Activity header after Errors
-          $('<td class="disk-activity-header">' + headerLabel() + '</td>').insertAfter($(this));
+      if (!$cells.length) return;
+      // Divider/section rows are a single wide colspan cell — just widen it.
+      if ($cells.length === 1) {
+        var cs = parseInt($cells.attr('colspan') || '0');
+        if (cs >= 10) $cells.attr('colspan', cs + 1);
+        return;
+      }
+      var visualCol = 0;
+      var handled = false;
+      $cells.each(function() {
+        if (handled) return false;
+        var $c = $(this);
+        var span = parseInt($c.attr('colspan') || '1');
+        if (visualCol + span === ACTIVITY_COL) {
+          // This cell ends exactly before Activity — insert the header after it.
+          $('<td class="disk-activity-header">' + headerLabel() + '</td>').insertAfter($c);
+          handled = true;
           return false;
         }
-        // Handle divider rows with colspan
-        var cs = parseInt($(this).attr('colspan') || '0');
-        if (cs >= 10) {
-          $(this).attr('colspan', cs + 1);
+        if (visualCol < ACTIVITY_COL && visualCol + span > ACTIVITY_COL) {
+          // A cell spans over the Activity column — extend it to cover Activity too.
+          $c.attr('colspan', span + 1);
+          handled = true;
           return false;
         }
+        visualCol += span;
       });
     });
   });

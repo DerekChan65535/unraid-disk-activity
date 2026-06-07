@@ -3,18 +3,22 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "disk.activity">
   <!ENTITY author    "Derek">
-  <!ENTITY version   "2026.06.07">
+  <!ENTITY version   "2026.06.08">
   <!ENTITY launch    "Main">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main">
   <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
   <!ENTITY txzURL    "https://github.com/DerekChan65535/unraid-disk-activity/releases/download/&version;/disk.activity-&version;.txz">
-  <!ENTITY md5       "93c5a1860fec9658923edf9dc0b8dd50">
+  <!ENTITY md5       "3dd62f911bde3a213f439f5eb1edad79">
   <!ENTITY support   "https://forums.unraid.net/topic/197765-plugin-disk-activity-real-time-io-utilization-column-for-array-pool-devices/">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" min="7.3.0" max="7.9.9">
 
 <CHANGES>
+###2026.06.08
+- Fix column misalignment on non-English webGUI language packs (e.g. German, French)
+- The Activity header is now inserted by column position instead of matching the translated "Errors" header text, so the header and data cells stay aligned and the Free column no longer disappears in other languages
+
 ###2026.06.07
 - Fix "already installed" error preventing reinstall after uninstall
 - Removal now removes the correctly versioned Slackware package (disk.activity-&lt;version&gt;) instead of the bare name, so the package database no longer keeps a stale entry

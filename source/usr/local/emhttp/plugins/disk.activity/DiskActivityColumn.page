@@ -190,11 +190,6 @@ $(function() {
         return;
       }
 
-      if ($cells.length < 6) {
-        // Not a full data row - skip
-        return;
-      }
-
       // Determine activity value for this row
       var diskName = getDiskName(this);
       var pct = diskName ? activityData[diskName] : undefined;

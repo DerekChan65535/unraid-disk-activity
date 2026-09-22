@@ -3,18 +3,29 @@
 <!DOCTYPE PLUGIN [
   <!ENTITY name      "disk.activity">
   <!ENTITY author    "Derek">
-  <!ENTITY version   "2026.06.08">
+  <!ENTITY version   "2026.09.22">
   <!ENTITY launch    "Main">
   <!ENTITY gitURL    "https://raw.githubusercontent.com/DerekChan65535/unraid-disk-activity/main">
   <!ENTITY pluginURL "&gitURL;/disk.activity.plg">
   <!ENTITY txzURL    "https://github.com/DerekChan65535/unraid-disk-activity/releases/download/&version;/disk.activity-&version;.txz">
-  <!ENTITY md5       "3dd62f911bde3a213f439f5eb1edad79">
+  <!ENTITY md5       "0b9a6385b3367e7118442754977bdef3">
   <!ENTITY support   "https://forums.unraid.net/topic/197765-plugin-disk-activity-real-time-io-utilization-column-for-array-pool-devices/">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" support="&support;" min="7.3.0" max="7.9.9">
 
 <CHANGES>
+###2026.09.22
+- Fix broken table layout on Main page when a disk drops to a "missing/disabled"
+  state (DISK_NP / DISK_NP_MISSING / DISK_NP_DSBL) - e.g. after a hardware error
+  kicks a disk out of the array or pool
+- Unraid renders these rows with only 3-4 &lt;td&gt; cells (using colspans to fill the
+  row), and the column-injection code was skipping any row with fewer than 6 raw
+  &lt;td&gt; cells entirely - leaving that one row a column short while every other row
+  gained the new Activity column, which broke the whole table's grid alignment
+- The existing colspan-aware column walker already handled this case correctly;
+  removed the short-row skip so it always runs
+
 ###2026.06.08
 - Fix column misalignment on non-English webGUI language packs (e.g. German, French)
 - The Activity header is now inserted by column position instead of matching the translated "Errors" header text, so the header and data cells stay aligned and the Free column no longer disappears in other languages
